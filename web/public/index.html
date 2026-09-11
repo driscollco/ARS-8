@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARS St. Louis Portfolio</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <img class="logo" src="/assets/ars-logo.png" alt="ARS Associated Realty Solutions" />
+      <div class="brand">
+        <h1>St. Louis Portfolio</h1>
+        <p class="sub">Associated Realty Solutions</p>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs wrap">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="descriptions">Descriptions</button>
+    <button class="tab" data-tab="analysis">Investment Analysis</button>
+  </nav>
+
+  <main class="wrap">
+   <div id="tab-overview" class="tab-panel">
+    <!-- Portfolio summary cards -->
+    <section id="rollup" class="cards" aria-label="Portfolio summary"></section>
+
+    <!-- Property table -->
+    <section>
+      <div class="section-head">
+        <h2>Properties</h2>
+        <div class="row" style="margin:0">
+          <button id="pkgBtn">Generate package description</button>
+          <input id="filter" type="search" placeholder="Filter by address…" aria-label="Filter properties" />
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table id="propTable">
+          <thead>
+            <tr>
+              <th data-key="address">Address</th>
+              <th data-key="owner">Owner</th>
+              <th data-key="beds" class="num">Beds</th>
+              <th data-key="full_baths" class="num">Baths</th>
+              <th data-key="living_sqft" class="num">Sq Ft</th>
+              <th data-key="year_built" class="num">Year</th>
+              <th data-key="market_value_2025" class="num">Mkt Value ’25</th>
+              <th data-key="realavm" class="num">RealAVM</th>
+              <th data-key="tax_2025" class="num">Tax ’25</th>
+              <th data-key="list_price" class="num">List Price</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="desc-tools" style="margin-top:14px">
+        <select id="pkgTone" aria-label="Package description tone">
+          <option value="mls">MLS public remarks</option>
+          <option value="investor">Investor</option>
+        </select>
+        <button id="pkgCopy">Copy</button>
+        <span id="pkgCopyMsg"></span>
+      </div>
+      <div id="pkgBox" class="desc-box" hidden></div>
+    </section>
+
+    <!-- Query box -->
+    <section>
+      <h2>Run a query</h2>
+      <p class="hint">Read-only. Single <code>SELECT</code> / <code>WITH</code> only. Try the examples below.</p>
+      <div class="examples">
+        <button class="chip" data-sql="SELECT * FROM v_portfolio_rollup;">Portfolio totals</button>
+        <button class="chip" data-sql="SELECT address, beds, living_sqft, market_value_2025, realavm FROM v_property_overview ORDER BY realavm DESC;">By RealAVM</button>
+        <button class="chip" data-sql="SELECT p.address, s.sale_price AS last_sale, v.market_total AS mkt_2025, v.market_total - s.sale_price AS gain FROM properties p JOIN sale_history s ON s.property_id=p.property_id AND s.is_last_sale=1 JOIN valuations v ON v.property_id=p.property_id AND v.year=2025 ORDER BY gain DESC;">Equity gain</button>
+        <button class="chip" data-sql="SELECT o.name AS owner, COUNT(*) AS homes, SUM(v.market_total) AS market_value FROM properties p JOIN owners o ON o.owner_id=p.owner_id JOIN valuations v ON v.property_id=p.property_id AND v.year=2025 GROUP BY o.name;">By owner</button>
+      </div>
+      <textarea id="sql" spellcheck="false" rows="4">SELECT * FROM v_property_overview ORDER BY market_value_2025 DESC;</textarea>
+      <div class="row">
+        <button id="runBtn" class="primary">Run query</button>
+        <span id="queryMsg" class="msg"></span>
+      </div>
+      <div class="table-scroll">
+        <table id="queryTable"><thead></thead><tbody></tbody></table>
+      </div>
+    </section>
+   </div><!-- /tab-overview -->
+
+   <div id="tab-descriptions" class="tab-panel" hidden>
+    <section>
+      <h2>Listing descriptions</h2>
+      <p class="hint">Query, view, and edit listing descriptions for each property in three tones: MLS public remarks, retail/homebuyer, and investor.</p>
+      
+      <div class="row" style="margin-bottom: 16px;">
+        <label for="descPropSel" style="font-weight: 600;">Select property:</label>
+        <select id="descPropSel" aria-label="Select property for descriptions">
+          <option value="">Choose a property…</option>
+        </select>
+      </div>
+
+      <div id="descViewMode">
+        <div class="desc-tools">
+          <button id="descViewBtn" class="primary">View descriptions</button>
+          <button id="descEditBtn">Edit descriptions</button>
+        </div>
+      </div>
+
+      <!-- View mode -->
+      <div id="descViewPanel" hidden style="margin-top: 20px;">
+        <div class="row">
+          <select id="descToneSel" aria-label="Description tone">
+            <option value="mls">MLS public remarks</option>
+            <option value="retail">Retail / homebuyer</option>
+            <option value="investor">Investor</option>
+          </select>
+          <button id="descCopyBtn">Copy description</button>
+          <span id="descCopyMsg"></span>
+        </div>
+        <div id="descDisplayBox" class="desc-box" style="margin-top: 12px;"></div>
+        <div style="margin-top: 16px;">
+          <button id="descBackToEditBtn">Back to edit mode</button>
+        </div>
+      </div>
+
+      <!-- Edit mode -->
+      <div id="descEditPanel" hidden style="margin-top: 20px;">
+        <p class="hint" style="margin-bottom: 14px;">Edit the description for this property. All three tones update independently.</p>
+        
+        <h4>MLS public remarks</h4>
+        <textarea id="descMls" spellcheck="true" rows="5"></textarea>
+        
+        <h4>Retail / homebuyer</h4>
+        <textarea id="descRetail" spellcheck="true" rows="5"></textarea>
+        
+        <h4>Investor</h4>
+        <textarea id="descInvestor" spellcheck="true" rows="5"></textarea>
+        
+        <div class="row" style="margin-top: 16px;">
+          <button id="descSaveBtn" class="primary">Save changes</button>
+          <button id="descCancelBtn">Cancel</button>
+          <span id="descSaveMsg"></span>
+        </div>
+      </div>
+
+      <!-- All descriptions table -->
+      <div style="margin-top: 32px;">
+        <h2>All properties - descriptions summary</h2>
+        <div class="table-scroll">
+          <table id="descTable">
+            <thead>
+              <tr>
+                <th data-key="address">Address</th>
+                <th>MLS</th>
+                <th>Retail</th>
+                <th>Investor</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+   </div><!-- /tab-descriptions -->
+
+   <div id="tab-analysis" class="tab-panel" hidden>
+    <section>
+      <h2>Portfolio returns</h2>
+      <p class="hint">Metrics computed from purchase basis (last sale), 2025 taxes, and current value, plus the assumptions below. Rents are estimates — adjust to real figures for an accurate picture.</p>
+      <section id="anKpis" class="cards" aria-label="Portfolio investment KPIs"></section>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>Per-property returns</h2></div>
+      <div class="table-scroll">
+        <table id="anTable">
+          <thead>
+            <tr>
+              <th data-key="address">Address</th>
+              <th data-key="purchase_price" class="num">Basis</th>
+              <th data-key="current_value" class="num">Value</th>
+              <th data-key="monthly_rent" class="num">Rent/mo</th>
+              <th data-key="noi" class="num">NOI</th>
+              <th data-key="cap_rate_on_purchase" class="num">Cap (basis)</th>
+              <th data-key="cap_rate_on_value" class="num">Cap (value)</th>
+              <th data-key="grm" class="num">GRM</th>
+              <th data-key="annual_cash_flow" class="num">Cash flow/yr</th>
+              <th data-key="cash_on_cash_pct" class="num">CoC</th>
+              <th data-key="dscr" class="num">DSCR</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="hint" style="margin-top:8px">Click a row for the full pro-forma. Cap (basis) = NOI ÷ original purchase price; Cap (value) = NOI ÷ current value; CoC = annual cash flow ÷ cash invested; DSCR = NOI ÷ annual debt service.</p>
+    </section>
+
+    <div class="grid-2">
+      <section>
+        <h2>Package price sensitivity</h2>
+        <p class="hint">Blended cap rate if the whole package is bought at a discount to total current value.</p>
+        <div class="table-scroll"><table id="discTable"><thead></thead><tbody></tbody></table></div>
+      </section>
+      <section>
+        <h2>Price at target cap rate</h2>
+        <p class="hint">What the package is worth to a buyer requiring a given cap rate (NOI ÷ cap).</p>
+        <div class="table-scroll"><table id="capTable"><thead></thead><tbody></tbody></table></div>
+      </section>
+    </div>
+
+    <section class="assumptions-note">
+      <h2>Assumptions</h2>
+      <p class="hint">Defaults applied to every property. These are modeled, not actuals — replace rents and expenses with real numbers before relying on them.</p>
+      <ul class="assumptions">
+        <li>Rent: estimated at ~0.9%/mo of 2025 market value (per-property)</li>
+        <li>Vacancy 8% &middot; Management 8% &middot; Maintenance 8% &middot; CapEx reserve 5%</li>
+        <li>Insurance $1,000/yr &middot; Taxes from 2025 county record (actual)</li>
+        <li>Financing: 25% down &middot; 7.5% rate &middot; 30-yr amortization &middot; 3% closing costs</li>
+      </ul>
+    </section>
+   </div><!-- /tab-analysis -->
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>ARS Associated Realty Solutions &middot; 119 N. Central Ave., Eureka, MO 63025</span>
+      <span>Data from public/estimated sources — verify before listing.</span>
+    </div>
+  </footer>
+
+  <!-- Detail drawer -->
+  <div id="drawer" class="drawer" hidden>
+    <div class="drawer-panel">
+      <button id="drawerClose" class="close" aria-label="Close">&times;</button>
+      <div id="drawerContent"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

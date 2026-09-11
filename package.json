@@ -1,0 +1,18 @@
+{
+  "name": "ars-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local web frontend for the ARS St. Louis 8-property portfolio database",
+  "scripts": {
+    "start": "node web/server.js",
+    "dev": "node web/server.js",
+    "build": "echo 'No build needed'",
+    "db:build": "sqlite3 db/ars.db < db/schema.sql && sqlite3 db/ars.db < db/seed.sql && sqlite3 db/ars.db < db/analysis.sql"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "sql.js": "^1.12.0"
+  }
+}

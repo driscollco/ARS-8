@@ -1,0 +1,25 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.vercel
+dist/
+build/
+.next/
+.cache/
+
+# --- Sensitive source documents (do NOT publish to the repo) ---
+# Signed listing contracts, tax/PII reports, marketing PDFs, and private notes.
+# The deployable app only needs the code + db/ars.db.
+8-Door-Flyer/
+Contracts/
+old/
+Notes/
+*.pdf
+
+# Local, non-app working files
+DESCRIPTIONS.md
+PROPERTY_DESCRIPTIONS_SUMMARY.md
+QUICK_DESC_GUIDE.txt

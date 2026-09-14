@@ -3,30 +3,90 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ARS St. Louis Portfolio</title>
+  <meta name="theme-color" content="#111111" />
+  <meta name="description" content="Review the ARS St. Louis rental portfolio, property details, modeled returns, and investment analysis from Associated Realty Solutions." />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://ars-8-puce.vercel.app/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="ARS Associated Realty Solutions" />
+  <meta property="og:title" content="St. Louis Rental Portfolio | ARS" />
+  <meta property="og:description" content="Explore an eight-property St. Louis rental portfolio with property photography, portfolio metrics, and modeled investment analysis." />
+  <meta property="og:url" content="https://ars-8-puce.vercel.app/" />
+  <meta property="og:image" content="https://ars-8-puce.vercel.app/assets/og-card.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="St. Louis Rental Portfolio | ARS" />
+  <meta name="twitter:description" content="Explore the ARS St. Louis rental portfolio and modeled investment analysis." />
+  <meta name="twitter:image" content="https://ars-8-puce.vercel.app/assets/og-card.png" />
+  <title>St. Louis Rental Portfolio | ARS Associated Realty Solutions</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "RealEstateAgent",
+      "name": "ARS Associated Realty Solutions",
+      "url": "https://ars-8-puce.vercel.app/",
+      "logo": "https://ars-8-puce.vercel.app/assets/ars-logo.png",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "119 N. Central Ave.",
+        "addressLocality": "Eureka",
+        "addressRegion": "MO",
+        "postalCode": "63025",
+        "addressCountry": "US"
+      },
+      "areaServed": "St. Louis, Missouri"
+    }
+  </script>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to portfolio content</a>
   <header>
-    <div class="wrap">
-      <img class="logo" src="/assets/ars-logo.png" alt="ARS Associated Realty Solutions" />
+    <div class="wrap brand-bar">
+      <img class="logo" src="/assets/ars-logo.png" alt="ARS Associated Realty Solutions" width="136" height="58" />
       <div class="brand">
+        <p class="eyebrow">Investor portfolio brief</p>
         <h1>St. Louis Portfolio</h1>
         <p class="sub">Associated Realty Solutions</p>
       </div>
     </div>
   </header>
 
-  <nav class="tabs wrap">
-    <button class="tab active" data-tab="overview">Overview</button>
-    <button class="tab" data-tab="descriptions">Descriptions</button>
-    <button class="tab" data-tab="analysis">Investment Analysis</button>
+  <nav class="tabs wrap" aria-label="Portfolio sections" role="tablist">
+    <button class="tab active" id="tab-button-overview" data-tab="overview" role="tab" aria-selected="true" aria-controls="tab-overview">Overview</button>
+    <button class="tab" id="tab-button-descriptions" data-tab="descriptions" role="tab" aria-selected="false" aria-controls="tab-descriptions">Descriptions</button>
+    <button class="tab" id="tab-button-analysis" data-tab="analysis" role="tab" aria-selected="false" aria-controls="tab-analysis">Investment Analysis</button>
   </nav>
 
-  <main class="wrap">
-   <div id="tab-overview" class="tab-panel">
+  <main id="main-content" class="wrap">
+   <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="eyebrow">St. Louis rental portfolio</p>
+      <h2 id="hero-title">Eight homes. One clear view of the opportunity.</h2>
+      <p>Explore property photos, operating fundamentals, and portfolio-level returns across eight single-family rentals in North County St. Louis.</p>
+      <p class="hero-note">Select a map marker for photos and listing details. Use Investment Analysis to review modeled returns; all figures are preliminary and subject to diligence.</p>
+    </div>
+
+   </section>
+
+   <div id="tab-overview" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-overview">
     <!-- Portfolio summary cards -->
     <section id="rollup" class="cards" aria-label="Portfolio summary"></section>
+
+    <!-- Property map -->
+    <section class="map-section" aria-labelledby="map-title">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Explore the portfolio</p>
+          <h2 id="map-title">Eight homes across North County</h2>
+        </div>
+        <p class="map-hint">Select a marker to view the home, photo, and listing description.</p>
+      </div>
+      <div id="propertyMap" class="property-map" aria-label="Map of ARS portfolio properties"></div>
+      <p class="map-attribution">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></p>
+    </section>
 
     <!-- Property table -->
     <section>
@@ -68,7 +128,7 @@
     </section>
 
     <!-- Query box -->
-    <section>
+    <section class="query-section">
       <h2>Run a query</h2>
       <p class="hint">Read-only. Single <code>SELECT</code> / <code>WITH</code> only. Try the examples below.</p>
       <div class="examples">
@@ -88,7 +148,7 @@
     </section>
    </div><!-- /tab-overview -->
 
-   <div id="tab-descriptions" class="tab-panel" hidden>
+   <div id="tab-descriptions" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-descriptions" hidden>
     <section>
       <h2>Listing descriptions</h2>
       <p class="hint">Query, view, and edit listing descriptions for each property in three tones: MLS public remarks, retail/homebuyer, and investor.</p>
@@ -164,7 +224,7 @@
     </section>
    </div><!-- /tab-descriptions -->
 
-   <div id="tab-analysis" class="tab-panel" hidden>
+   <div id="tab-analysis" class="tab-panel" role="tabpanel" aria-labelledby="tab-button-analysis" hidden>
     <section>
       <h2>Portfolio returns</h2>
       <p class="hint">Metrics computed from purchase basis (last sale), 2025 taxes, and current value, plus the assumptions below. Rents are estimates — adjust to real figures for an accurate picture.</p>
@@ -230,13 +290,21 @@
   </footer>
 
   <!-- Detail drawer -->
-  <div id="drawer" class="drawer" hidden>
+  <div id="propertyModal" class="property-modal" role="dialog" aria-modal="true" aria-labelledby="propertyModalTitle" hidden>
+    <div class="property-modal-panel">
+      <button id="propertyModalClose" class="close" aria-label="Close property preview">&times;</button>
+      <div id="propertyModalContent"></div>
+    </div>
+  </div>
+
+  <div id="drawer" class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" hidden>
     <div class="drawer-panel">
-      <button id="drawerClose" class="close" aria-label="Close">&times;</button>
+      <button id="drawerClose" class="close" aria-label="Close property details">&times;</button>
       <div id="drawerContent"></div>
     </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="/app.js"></script>
 </body>
 </html>

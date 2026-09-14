@@ -5,6 +5,9 @@ const money = (n) => (n === null || n === undefined || n === '')
   : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
 const num = (n) => (n === null || n === undefined || n === '') ? '—' : Number(n).toLocaleString('en-US');
 const bathLabel = (full, half) => half ? String(full + 0.5 * half) : String(full);
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[char]));
 
 async function getJSON(url) {
   const r = await fetch(url);
@@ -34,6 +37,31 @@ let sortKey = 'market_value_2025';
 let sortDir = -1;
 
 const MONEY_KEYS = new Set(['market_value_2025', 'realavm', 'tax_2025', 'list_price']);
+
+const propertyImages = {
+  1: '/assets/properties/10037-dorothy.jpg',
+  2: '/assets/properties/10062-dorothy.jpg',
+  3: '/assets/properties/10326-ashbrook.jpg',
+  4: '/assets/properties/1229-kilgore.jpg',
+  5: '/assets/properties/651-gleason.jpg',
+  6: '/assets/properties/839-font.jpg',
+  7: '/assets/properties/9266-waldorf.jpg',
+  8: '/assets/properties/9464-adler.jpg',
+};
+
+// Geocoded from the listed street addresses; marker clicks use these fixed portfolio locations.
+const propertyCoordinates = {
+  1: [38.7500683, -90.2164709],
+  2: [38.7509141, -90.2158627],
+  3: [38.7577656, -90.2282150],
+  4: [38.7527193, -90.2313816],
+  5: [38.7456196, -90.2176281],
+  6: [38.7562980, -90.2181449],
+  7: [38.7296780, -90.2334276],
+  8: [38.7356930, -90.2337046],
+};
+
+let propertyMap;
 
 function renderTable() {
   const filter = document.getElementById('filter').value.toLowerCase();
@@ -66,8 +94,90 @@ function renderTable() {
 }
 
 async function loadProps() {
-  allProps = await getJSON('/api/properties');
+  const [props, descriptions] = await Promise.all([
+    getJSON('/api/properties'),
+    getJSON('/api/descriptions'),
+  ]);
+  allProps = props;
+  allDescriptions = descriptions;
   renderTable();
+  renderMap();
+}
+
+function renderMap() {
+  if (!window.L || !allProps.length) return;
+  const mapElement = document.getElementById('propertyMap');
+  if (!mapElement) return;
+
+  if (!propertyMap) {
+    propertyMap = L.map(mapElement, { scrollWheelZoom: false, zoomControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(propertyMap);
+  }
+
+  propertyMap.eachLayer((layer) => {
+    if (layer instanceof L.CircleMarker) propertyMap.removeLayer(layer);
+  });
+
+  const bounds = [];
+  allProps.forEach((property) => {
+    const coordinates = propertyCoordinates[property.property_id];
+    if (!coordinates) return;
+    bounds.push(coordinates);
+    L.circleMarker(coordinates, {
+      radius: 9,
+      color: '#111111',
+      weight: 2,
+      fillColor: '#f2e838',
+      fillOpacity: 1,
+    })
+      .addTo(propertyMap)
+      .bindTooltip(property.address, { direction: 'top', offset: [0, -7] })
+      .on('click', () => openPropertyModal(property.property_id));
+  });
+
+  if (bounds.length) propertyMap.fitBounds(bounds, { padding: [28, 28], maxZoom: 14 });
+  setTimeout(() => propertyMap.invalidateSize(), 0);
+}
+
+function openPropertyModal(id) {
+  const property = allProps.find((item) => item.property_id === id);
+  if (!property) return;
+  const description = allDescriptions.find((item) => item.property_id === id);
+  const imageUrl = propertyImages[id];
+  const modal = document.getElementById('propertyModal');
+  const imageMarkup = imageUrl
+    ? `<img class="property-modal-photo" src="${imageUrl}" alt="Front view of ${escapeHtml(property.address)}" width="1200" height="900" decoding="async">`
+    : '<div class="property-modal-photo photo-placeholder">Photo unavailable</div>';
+
+  document.getElementById('propertyModalContent').innerHTML = `
+    ${imageMarkup}
+    <div class="property-modal-body">
+      <p class="eyebrow">ARS portfolio property</p>
+      <h2 id="propertyModalTitle">${escapeHtml(property.address)}</h2>
+      <div class="property-modal-meta">
+        <span>${property.beds} bd</span>
+        <span>${bathLabel(property.full_baths, property.half_baths)} ba</span>
+        <span>${num(property.living_sqft)} sq ft</span>
+        <span>${escapeHtml(property.zip ?? '')}</span>
+      </div>
+      <p class="property-modal-description">${escapeHtml(description?.mls_description ?? 'Listing description unavailable.')}</p>
+      <div class="property-modal-actions">
+        <button class="primary" id="propertyModalDetails" data-id="${id}">View full property details</button>
+        <button id="propertyModalCloseSecondary">Close</button>
+      </div>
+    </div>
+  `;
+  modal.hidden = false;
+  document.body.classList.add('modal-open');
+  document.getElementById('propertyModalDetails').focus();
+}
+
+function closePropertyModal() {
+  document.getElementById('propertyModal').hidden = true;
+  document.body.classList.remove('modal-open');
 }
 
 // ---- detail drawer ----
@@ -80,9 +190,15 @@ async function openDetail(id) {
   const saleRows = p.sales.map((s) => `
     <tr><td>${s.sale_date ?? '—'}</td><td class="num">${money(s.sale_price)}</td><td>${s.seller_name ?? '—'}</td></tr>`).join('');
 
+  const imageUrl = propertyImages[p.property_id];
+  const imageMarkup = imageUrl
+    ? `<img class="property-photo" src="${imageUrl}" alt="Front view of ${p.address}" width="1200" height="900" loading="lazy" decoding="async">`
+    : '';
+
   document.getElementById('drawerContent').innerHTML = `
-    <h3>${p.address}</h3>
+    <h3 id="drawerTitle">${p.address}</h3>
     <p class="addr-sub">${p.owner ?? ''} &middot; ${p.legal.mls_area ?? ''} &middot; APN ${p.legal.apn ?? '—'}</p>
+    ${imageMarkup}
     <div class="detail-grid">
       <div><div class="k">Beds / Baths</div><div class="v">${p.beds} / ${bathLabel(p.full_baths, p.half_baths)}</div></div>
       <div><div class="k">Living sq ft</div><div class="v">${num(p.living_sqft)}</div></div>
@@ -249,7 +365,7 @@ async function openProforma(id) {
   const a = await getJSON('/api/analysis/' + id);
   const line = (label, val, cls = '') => `<tr class="${cls}"><td>${label}</td><td>${val}</td></tr>`;
   document.getElementById('drawerContent').innerHTML = `
-    <h3>${a.address}</h3>
+    <h3 id="drawerTitle">${a.address}</h3>
     <p class="addr-sub">Pro-forma (annual) &middot; purchase basis ${money(a.purchase_price)} &middot; value ${money(a.current_value)}</p>
     <table class="proforma">
       ${line('Gross scheduled rent', money(a.gross_rent))}
@@ -353,7 +469,12 @@ async function showDescriptionEdit(id) {
 }
 
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab').forEach((t) => {
+    const selected = t.dataset.tab === name;
+    t.classList.toggle('active', selected);
+    t.setAttribute('aria-selected', String(selected));
+    t.tabIndex = selected ? 0 : -1;
+  });
   document.getElementById('tab-overview').hidden = name !== 'overview';
   document.getElementById('tab-descriptions').hidden = name !== 'descriptions';
   document.getElementById('tab-analysis').hidden = name !== 'analysis';
@@ -397,6 +518,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('drawerClose').addEventListener('click', () => { document.getElementById('drawer').hidden = true; });
   document.getElementById('drawer').addEventListener('click', (e) => { if (e.target.id === 'drawer') e.currentTarget.hidden = true; });
+
+  const propertyModal = document.getElementById('propertyModal');
+  document.getElementById('propertyModalClose').addEventListener('click', closePropertyModal);
+  propertyModal.addEventListener('click', (e) => {
+    if (e.target === propertyModal || e.target.id === 'propertyModalCloseSecondary') closePropertyModal();
+    if (e.target.id === 'propertyModalDetails') {
+      const id = Number(e.target.dataset.id);
+      closePropertyModal();
+      openDetail(id);
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closePropertyModal();
+      document.getElementById('drawer').hidden = true;
+    }
+  });
 
   // package description
   const pkgBox = document.getElementById('pkgBox');

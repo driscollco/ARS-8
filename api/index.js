@@ -52,6 +52,23 @@ module.exports = async (req, res) => {
       return sendJson(res, 200, await db.all('SELECT * FROM v_property_overview ORDER BY property_id'));
     }
 
+    // /api/descriptions and /api/descriptions/:id
+    if (parts[1] === 'descriptions') {
+      if (parts[2]) {
+        const id = db.sqlNum(parts[2]);
+        const description = await db.get(`
+          SELECT d.property_id, p.address, d.mls_description, d.retail_description, d.investor_description
+          FROM descriptions d JOIN properties p ON p.property_id = d.property_id
+          WHERE d.property_id = ${id}`);
+        if (!description) return sendJson(res, 404, { error: 'not found' });
+        return sendJson(res, 200, description);
+      }
+      return sendJson(res, 200, await db.all(`
+        SELECT d.property_id, p.address, d.mls_description, d.retail_description, d.investor_description
+        FROM descriptions d JOIN properties p ON p.property_id = d.property_id
+        ORDER BY d.property_id`));
+    }
+
     // /api/property/:id
     if (parts[1] === 'property' && parts[2]) {
       const id = db.sqlNum(parts[2]);
